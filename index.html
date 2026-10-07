@@ -1,7 +1,172 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SocialGods-Cyber</title><script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script><script src="https://unpkg.com/globe.gl@2.37.0/dist/globe.gl.min.js"></script><style>
-:root{--bg:#05070b;--panel:rgba(10,15,23,.88);--line:#1d2b3a;--text:#e9f2ff;--muted:#8da1b8;--red:#ff405c;--orange:#ff9f43;--blue:#53a8ff;--green:#52e0a0}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 35%,#102030 0,#05070b 55%);color:var(--text);font:14px Inter,system-ui,sans-serif;overflow:hidden}.top{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--line);background:rgba(4,7,12,.8);backdrop-filter:blur(12px);position:relative;z-index:5}.brand{font-weight:800;letter-spacing:.08em}.brand span{color:#6fc5ff}.status{font-size:12px;color:var(--muted)}.layout{height:calc(100vh - 64px);position:relative}.globe{position:absolute;inset:0}.panel{position:absolute;top:18px;bottom:18px;width:310px;padding:16px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(12px);border-radius:14px;z-index:3;box-shadow:0 18px 60px #0008}.left{left:18px}.right{right:18px}.title{font-size:12px;color:var(--muted);letter-spacing:.14em}.level{font-size:28px;font-weight:800;margin:8px 0 14px}.meter{height:8px;background:#16202b;border-radius:99px;overflow:hidden}.meter i{display:block;height:100%;width:78%;background:linear-gradient(90deg,#4fd5ff,#ffb14a,#ff405c)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.card{padding:10px;border:1px solid var(--line);border-radius:10px;background:#0a111a}.num{font-size:20px;font-weight:800}.muted{color:var(--muted);font-size:11px}.feed{margin-top:12px;max-height:42vh;overflow:auto}.item{padding:10px 0;border-bottom:1px solid var(--line)}.item b{display:block;font-size:12px}.item small{color:var(--muted)}.tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.btn{border:1px solid var(--line);background:#0b121b;color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}.btn:hover{border-color:#4aa8e8}.footer{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:4;color:#71869e;font-size:11px}.pin{font-size:12px}.warn{color:var(--red)}@media(max-width:900px){.panel{width:260px}.right{display:none}.left{left:10px;top:10px;bottom:auto;max-height:calc(100vh - 90px);overflow:auto}}
-</style></head><body><header class="top"><div class="brand">SOCIALGODS<span>-CYBER</span></div><div class="status" id="updated">Loading intelligence…</div></header><main class="layout"><div id="globe" class="globe"></div><aside class="panel left"><div class="title">GLOBAL THREAT RADAR</div><div id="level" class="level">—</div><div class="meter"><i id="meter"></i></div><div class="grid"><div class="card"><div class="num" id="critical">—</div><div class="muted">CRITICAL</div></div><div class="card"><div class="num" id="high">—</div><div class="muted">HIGH</div></div><div class="card"><div class="num" id="medium">—</div><div class="muted">MEDIUM</div></div><div class="card"><div class="num" id="newsCount">—</div><div class="muted">INTELLIGENCE</div></div></div><div class="title">LAYERS</div><div class="tools"><button class="btn" onclick="setLayer('threats')">🔴 Threats</button><button class="btn" onclick="setLayer('breaches')">💾 Breaches</button><button class="btn" onclick="setLayer('cves')">⚠️ CVE</button><button class="btn" onclick="setLayer('infra')">🌐 Infra</button></div><div class="title" style="margin-top:16px">LATEST INTELLIGENCE</div><div id="feed" class="feed"></div></aside><aside class="panel right"><div class="title">CYBER EYE</div><h2 style="margin:6px 0 2px">Public Threat Intelligence</h2><p class="muted">A privacy-first global view built from public security sources. No passwords, Discord tokens or private tracking.</p><div class="card"><div class="title">WHAT YOU CAN EXPLORE</div><p>🌍 Countries & regions<br>🚨 Threat severity<br>💾 Breaches & ransomware<br>🦠 Malware campaigns<br>⚠️ CVE / KEV<br>📡 Infrastructure events</p></div><div class="card"><div class="title">DATA SOURCES</div><p>NVD • CISA KEV • SocialGods cyber feeds</p></div><div class="card"><div class="title">STATUS</div><p id="apiStatus">Checking API…</p></div></aside><div class="footer">SOCIALGODS-CYBER • PUBLIC INTELLIGENCE • SOURCE LINKS ARE PROVIDED FOR VERIFICATION</div></main><script>
-const points=[{lat:52.1,lng:5.3,name:'Netherlands',v:8},{lat:51.5,lng:-0.1,name:'United Kingdom',v:12},{lat:52.5,lng:13.4,name:'Germany',v:9},{lat:48.8,lng:2.3,name:'France',v:7},{lat:40.7,lng:-74,name:'United States',v:18},{lat:37.8,lng:-122.4,name:'United States West',v:11},{lat:35.7,lng:139.7,name:'Japan',v:8},{lat:1.35,lng:103.8,name:'Singapore',v:6},{lat:25.2,lng:55.3,name:'UAE',v:5}];
-let globe;function initGlobe(){globe=Globe()(document.getElementById('globe')).backgroundColor('#00000000').showAtmosphere(true).atmosphereColor('#3aa9ff').atmosphereAltitude(.18).pointsData(points).pointLat('lat').pointLng('lng').pointAltitude(d=>.04+d.v*.002).pointRadius(d=>.15+d.v*.012).pointColor(d=>d.v>12?'#ff405c':d.v>8?'#ff9f43':'#53a8ff').pointLabel(d=>`<div class="pin"><b>${d.name}</b><br>Threat signals: ${d.v}</div>`).width(innerWidth).height(innerHeight-64);globe.controls().autoRotate=true;globe.controls().autoRotateSpeed=.35;}
-async function load(){try{const [s,n]=await Promise.all([fetch('/api/summary').then(r=>r.json()),fetch('/api/news').then(r=>r.json())]);document.getElementById('level').textContent=s.threat_level;document.getElementById('critical').textContent=s.counts.CRITICAL;document.getElementById('high').textContent=s.counts.HIGH;document.getElementById('medium').textContent=s.counts.MEDIUM;document.getElementById('newsCount').textContent=s.news_count;document.getElementById('updated').textContent='Updated '+new Date(s.generated_at).toLocaleTimeString();document.getElementById('apiStatus').textContent='ONLINE • '+s.news_count+' indexed items';document.getElementById('feed').innerHTML=(n.items||[]).slice(0,12).map(x=>`<div class="item"><b>${esc(x.title||'Untitled')}</b><small>${esc(x.source||'source')} • ${esc(x.severity||'NEWS')}</small></div>`).join('')||'<div class="muted">No local cyber-news items yet.</div>'}catch(e){document.getElementById('apiStatus').textContent='API unavailable — demo globe remains available'}}function esc(x){return String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}function setLayer(name){alert('Layer: '+name+' — backend layer wiring can be enabled next.')}initGlobe();load();setInterval(load,300000);addEventListener('resize',()=>globe.width(innerWidth).height(innerHeight-64));
-</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SocialGods Cyber — Global Threat Intelligence</title>
+<style>
+:root{--bg:#03070d;--panel:rgba(7,13,22,.88);--line:rgba(76,211,255,.18);--cyan:#43ddff;--green:#42f59b;--amber:#ffc857;--red:#ff416c;--purple:#a78bfa;--text:#e8f5ff;--muted:#7590a5}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#02050a;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 42%,rgba(26,101,150,.11),transparent 42%),linear-gradient(120deg,rgba(66,221,255,.025),transparent 40%,rgba(167,139,250,.03));z-index:0}
+#app{position:relative;width:100%;height:100%;z-index:1}.top{height:68px;display:flex;align-items:center;gap:18px;padding:10px 18px;border-bottom:1px solid var(--line);background:rgba(2,6,12,.82);backdrop-filter:blur(16px);position:relative;z-index:20}
+.logo{font-weight:900;letter-spacing:.08em;font-size:18px;white-space:nowrap}.logo b{color:var(--cyan)}.status{display:flex;align-items:center;gap:8px;color:#9db4c7;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green)}
+.search{margin-left:auto;max-width:360px;flex:1;display:flex}.search input{width:100%;background:#08111b;border:1px solid var(--line);color:white;padding:11px 14px;border-radius:10px;outline:0}.clock{font-variant-numeric:tabular-nums;color:#8ca8ba;font-size:12px}
+.main{height:calc(100% - 68px);display:grid;grid-template-columns:280px 1fr 315px;position:relative}
+.left,.right{background:linear-gradient(180deg,rgba(5,12,20,.9),rgba(3,8,14,.76));backdrop-filter:blur(14px);padding:15px;overflow:auto;z-index:12}
+.left{border-right:1px solid var(--line)}.right{border-left:1px solid var(--line)}
+h3{font-size:11px;letter-spacing:.14em;color:#86a4b8;margin:4px 0 11px;text-transform:uppercase}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:13px;padding:13px;margin-bottom:12px;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+.big{font-size:26px;font-weight:900}.muted{color:var(--muted);font-size:11px}.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.btn{border:1px solid var(--line);background:#08131e;color:#cfe8f5;padding:8px 10px;border-radius:9px;cursor:pointer;font-size:11px}.btn:hover{border-color:var(--cyan);color:white}.btn.active{background:rgba(67,221,255,.1);border-color:var(--cyan);color:var(--cyan)}
+.layer{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}.switch{width:34px;height:18px;border-radius:20px;background:#142433;position:relative;cursor:pointer}.switch i{position:absolute;width:14px;height:14px;border-radius:50%;top:2px;left:2px;background:#6d8191;transition:.2s}.switch.on{background:rgba(67,221,255,.25)}.switch.on i{left:18px;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+#globe{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 50%,#061321 0,#02070d 42%,#010307 72%)}#globe canvas{display:block}
+.scan{position:absolute;inset:0;pointer-events:none;background:linear-gradient(transparent 49.5%,rgba(67,221,255,.025) 50%,transparent 50.5%);background-size:100% 7px;mix-blend-mode:screen}
+.scanline{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 18px var(--cyan);opacity:.25;animation:scan 6s linear infinite;pointer-events:none}@keyframes scan{from{top:8%}to{top:92%}}
+.hud{position:absolute;pointer-events:none;inset:18px}.corner{position:absolute;width:36px;height:36px;border-color:rgba(67,221,255,.45)}.tl{left:0;top:0;border-left:1px solid;border-top:1px solid}.tr{right:0;top:0;border-right:1px solid;border-top:1px solid}.bl{left:0;bottom:0;border-left:1px solid;border-bottom:1px solid}.br{right:0;bottom:0;border-right:1px solid;border-bottom:1px solid}
+.hudtext{position:absolute;left:13px;top:46px;font-size:10px;letter-spacing:.16em;color:#638399}.coords{position:absolute;right:13px;bottom:43px;font-size:10px;color:#638399;text-align:right}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{padding:10px;border-radius:10px;background:#07111a;border:1px solid rgba(255,255,255,.05)}.stat strong{display:block;font-size:16px}.sev{font-size:10px;padding:3px 6px;border-radius:20px}.critical{color:#ff6a87;background:rgba(255,65,108,.1)}.high{color:#ffb25a;background:rgba(255,200,87,.1)}.medium{color:#74d7ff;background:rgba(67,221,255,.1)}
+.bar{height:6px;background:#0d1924;border-radius:8px;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--cyan),var(--purple))}
+.event{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)}.event b{font-size:11px}.event small{display:block;color:#718a9c;margin-top:3px;font-size:9px}.tag{font-size:9px;color:var(--cyan);letter-spacing:.08em}
+#tooltip{position:absolute;display:none;min-width:210px;max-width:280px;background:rgba(3,9,16,.96);border:1px solid rgba(67,221,255,.4);border-radius:12px;padding:12px;z-index:30;box-shadow:0 15px 45px #000;font-size:11px;pointer-events:none}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:9px;color:#7891a2}.legend span:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:currentColor;box-shadow:0 0 8px currentColor}.lgc{color:var(--red)}.lgh{color:var(--amber)}.lgm{color:var(--cyan)}
+@media(max-width:1050px){.main{grid-template-columns:230px 1fr}.right{display:none}}@media(max-width:720px){.top{height:58px}.status,.clock{display:none}.search{max-width:none}.main{height:calc(100% - 58px);grid-template-columns:1fr}.left{display:none}.right{display:none}.logo{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="top">
+  <div class="logo">SOCIALGODS <b>// CYBER</b></div>
+  <div class="status"><i class="dot"></i> GLOBAL SENSOR MESH ONLINE</div>
+  <div class="search"><input id="search" placeholder="⌕  Global search: IP, domain, CVE, country..."></div>
+  <div class="clock" id="clock"></div>
+</header>
+<section class="main">
+<aside class="left">
+  <h3>Threat Command</h3>
+  <div class="card">
+    <div class="muted">GLOBAL THREAT LEVEL</div>
+    <div class="row"><div class="big" id="threatLevel">HIGH</div><span class="sev high">ELEVATED</span></div>
+    <div class="bar"><i id="threatBar" style="width:72%"></i></div>
+    <div class="muted" style="margin-top:7px">Synthetic visualization — not a live attack feed.</div>
+  </div>
+  <div class="card">
+    <h3>Layers</h3>
+    <div class="layer">⚔ Attack paths <div class="switch on" data-layer="attack"><i></i></div></div>
+    <div class="layer">☣ Malware <div class="switch on" data-layer="malware"><i></i></div></div>
+    <div class="layer">◉ DDoS <div class="switch on" data-layer="ddos"><i></i></div></div>
+    <div class="layer">✉ Phishing <div class="switch on" data-layer="phishing"><i></i></div></div>
+    <div class="layer">◈ Botnet <div class="switch on" data-layer="botnet"><i></i></div></div>
+    <div class="layer">◆ Critical infra <div class="switch on" data-layer="critical"><i></i></div></div>
+  </div>
+  <div class="card">
+    <h3>Time Machine</h3>
+    <div class="row"><span class="muted">WINDOW</span><b id="timeLabel">NOW</b></div>
+    <input id="time" type="range" min="0" max="100" value="100" style="width:100%;accent-color:#43ddff;margin-top:12px">
+    <div class="row muted"><span>24h</span><span>12h</span><span>NOW</span></div>
+  </div>
+  <div class="card">
+    <h3>Quick Actions</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+      <button class="btn" id="pause">⏸ Pause</button><button class="btn" id="reset">⟳ Reset</button>
+      <button class="btn" id="focus">◎ Auto Focus</button><button class="btn" id="radar">◉ Radar</button>
+    </div>
+  </div>
+</aside>
+
+<div id="globe">
+  <div class="scan"></div><div class="scanline"></div>
+  <div class="hud"><div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <div class="hudtext">SOCIALGODS GLOBAL THREAT INTELLIGENCE // LIVE VISUALIZATION</div>
+    <div class="coords">DRAG • ROTATE &nbsp; SCROLL • ZOOM<br><span id="cursorCoord">LAT 00.000 / LON 00.000</span></div>
+  </div>
+  <div id="tooltip"></div>
+</div>
+
+<aside class="right">
+  <h3>Cyber Threat Radar</h3>
+  <div class="card">
+    <div class="statgrid">
+      <div class="stat"><span class="muted">CRITICAL</span><strong id="criticalCount">12</strong><span class="sev critical">SEV-1</span></div>
+      <div class="stat"><span class="muted">HIGH</span><strong id="highCount">37</strong><span class="sev high">SEV-2</span></div>
+      <div class="stat"><span class="muted">MEDIUM</span><strong id="medCount">84</strong><span class="sev medium">SEV-3</span></div>
+      <div class="stat"><span class="muted">NODES</span><strong id="nodes">1,847</strong><span class="muted">observed</span></div>
+    </div>
+  </div>
+  <h3>Attack Pulse</h3>
+  <div class="card">
+    <div class="row"><span>Malware</span><b>42%</b></div><div class="bar"><i style="width:42%"></i></div>
+    <div class="row" style="margin-top:9px"><span>DDoS</span><b>27%</b></div><div class="bar"><i style="width:27%"></i></div>
+    <div class="row" style="margin-top:9px"><span>Phishing</span><b>19%</b></div><div class="bar"><i style="width:19%"></i></div>
+    <div class="row" style="margin-top:9px"><span>Botnet</span><b>12%</b></div><div class="bar"><i style="width:12%"></i></div>
+  </div>
+  <h3>Live Event Stream</h3>
+  <div class="card" id="events"></div>
+  <h3>Legend</h3>
+  <div class="legend"><span class="lgc">Critical</span><span class="lgh">High</span><span class="lgm">Medium</span></div>
+</aside>
+</section>
+</div>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three-globe@2.41.12/dist/three-globe.min.js"></script>
+<script>
+const countries=[
+["United States",38,-97,"Critical","DDoS"],["Brazil",-10,-52,"High","Phishing"],["United Kingdom",54,-2,"High","Malware"],
+["Germany",51,10,"Medium","Botnet"],["Ukraine",49,32,"Critical","Attack"],["Russia",61,100,"Critical","Malware"],
+["India",22,79,"High","Phishing"],["Japan",36,138,"Medium","DDoS"],["Australia",-25,134,"Medium","Botnet"],
+["Singapore",1.35,103.8,"High","Attack"],["China",35,103,"Critical","Attack"],["South Korea",36,128,"High","Malware"],
+["Netherlands",52.2,5.3,"Medium","Phishing"],["France",46,2,"Medium","Malware"],["South Africa",-30,24,"Medium","Botnet"],
+["Nigeria",9,8,"High","Phishing"],["Israel",31.5,34.8,"Critical","Attack"],["UAE",24,54,"High","DDoS"],
+["Turkey",39,35,"High","Malware"],["Canada",56,-106,"Medium","Botnet"],["Mexico",23,-102,"High","Phishing"]
+];
+const routes=[
+["United States",38,-97,"China",35,103],["Russia",61,100,"Germany",51,10],["Ukraine",49,32,"United States",38,-97],
+["China",35,103,"Japan",36,138],["Brazil",-10,-52,"United States",38,-97],["India",22,79,"Singapore",1.35,103.8],
+["United Kingdom",54,-2,"Netherlands",52.2,5.3],["Israel",31.5,34.8,"UAE",24,54],["Nigeria",9,8,"France",46,2],
+["Australia",-25,134,"Singapore",1.35,103.8],["Turkey",39,35,"Germany",51,10]
+];
+const colors={Critical:"#ff416c",High:"#ffc857",Medium:"#43ddff"};
+const container=document.getElementById("globe"), tooltip=document.getElementById("tooltip");
+const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(35,1,.1,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); container.appendChild(renderer.domElement);
+const globe=new ThreeGlobe()
+ .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+ .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+ .backgroundColor("rgba(0,0,0,0)")
+ .showAtmosphere(true).atmosphereColor("#43ddff").atmosphereAltitude(.18)
+ .pointsData(countries.map(x=>({name:x[0],lat:x[1],lng:x[2],sev:x[3],type:x[4]})))
+ .pointLat(d=>d.lat).pointLng(d=>d.lng).pointColor(d=>colors[d.sev]).pointRadius(.32).pointAltitude(.018)
+ .pointResolution(10)
+ .arcsData(routes.map(r=>({s:r.slice(0,3),t:r.slice(3),type:"Attack"})))
+ .arcStartLat(d=>d.s[0]).arcStartLng(d=>d.s[1]).arcEndLat(d=>d.t[0]).arcEndLng(d=>d.t[1])
+ .arcColor(d=>["#ff416c","#ffc857","#43ddff"]).arcAltitudeAutoScale(.35).arcStroke(.35).arcDashLength(.45).arcDashGap(.25).arcDashAnimateTime(1700);
+scene.add(globe); camera.position.z=270;
+const controls=globe.controls(); controls.autoRotate=true; controls.autoRotateSpeed=.28; controls.enableDamping=true;
+const ray=()=>{};
+function resize(){const w=container.clientWidth,h=container.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)} addEventListener("resize",resize);resize();
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)} animate();
+
+let paused=false;
+document.getElementById("pause").onclick=e=>{paused=!paused;controls.autoRotate=!paused;e.currentTarget.textContent=paused?"▶ Resume":"⏸ Pause"};
+document.getElementById("reset").onclick=()=>{controls.reset();controls.autoRotate=true;paused=false;document.getElementById("pause").textContent="⏸ Pause"};
+document.getElementById("focus").onclick=()=>{controls.autoRotate=false;controls.reset();setTimeout(()=>controls.autoRotate=true,1500)};
+document.querySelectorAll(".switch").forEach(s=>s.onclick=()=>{s.classList.toggle("on"); const layer=s.dataset.layer;
+  if(layer==="attack") globe.arcsTransitionDuration(s.classList.contains("on")?1700:0);
+  if(layer!=="attack"){ /* visual demo keeps point layer visible */ }
+});
+document.getElementById("time").oninput=e=>{const v=+e.target.value;document.getElementById("timeLabel").textContent=v>90?"NOW":v>65?"-6 HOURS":v>35?"-12 HOURS":"-24 HOURS";};
+container.addEventListener("mousemove",e=>{const r=container.getBoundingClientRect();document.getElementById("cursorCoord").textContent=`SCREEN ${Math.round(e.clientX-r.left)} × ${Math.round(e.clientY-r.top)}`});
+container.addEventListener("click",e=>{
+ const r=container.getBoundingClientRect(); const x=e.clientX-r.left,y=e.clientY-r.top;
+ let nearest=null,nd=70;
+ countries.forEach(c=>{const p=globe.getScreenCoords(c[1],c[2],.02);const d=Math.hypot(p.x-x,p.y-y);if(d<nd){nd=d;nearest=c}});
+ if(nearest){tooltip.style.display="block";tooltip.style.left=Math.min(x+16,r.width-230)+"px";tooltip.style.top=Math.min(y+16,r.height-150)+"px";
+ tooltip.innerHTML=`<b style="color:${colors[nearest[3]]}">${nearest[0]}</b><br><span class="muted">Threat classification</span><br><strong>${nearest[3]} • ${nearest[4]}</strong><br><span class="muted">Intel node / simulated telemetry</span>`}
+});
+const events=[
+["CRITICAL","Credential abuse campaign detected","US → EU edge","2m ago"],["HIGH","DDoS burst pattern","JP / SG transit","5m ago"],
+["CRITICAL","Malware beacon cluster","RU / UA region","8m ago"],["HIGH","Phishing infrastructure","UK / NL","11m ago"],["MEDIUM","Botnet activity","AU / SEA","14m ago"]
+];
+document.getElementById("events").innerHTML=events.map(e=>`<div class="event"><span class="tag">${e[0]}</span><b> ${e[1]}</b><small>${e[2]} • ${e[3]}</small></div>`).join("");
+setInterval(()=>{document.getElementById("clock").textContent=new Date().toISOString().replace("T"," ").slice(0,19)+" UTC"},1000);
+document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.value.trim()){alert("Cyber Search: "+e.target.value.trim()+"\\n\\nConnect an authorized threat-intel API to return live intelligence.")}});
+</script>
+</body></html>
